@@ -62,7 +62,7 @@ void main() {
       expect(find.text('YTD Cashflow'), findsOneWidget);
       expect(find.text('6-Month Cashflow'), findsOneWidget);
 
-      await tester.tap(find.text('Backup'));
+      await tester.tap(find.byTooltip('Backup'));
       await tester.pumpAndSettle();
       expect(find.text('100% Local-First Privacy'), findsOneWidget);
       expect(find.text('Google Drive Backup (On-Demand)'), findsOneWidget);

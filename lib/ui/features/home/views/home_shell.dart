@@ -107,6 +107,22 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                   isDark ? ThemeMode.light : ThemeMode.dark,
                 ),
               ),
+              IconButton(
+                tooltip: 'Backup',
+                style: IconButton.styleFrom(
+                  backgroundColor: _selectedIndex == 4
+                      ? colors.softTint
+                      : Colors.transparent,
+                ),
+                icon: Icon(
+                  Icons.cloud_outlined,
+                  size: 20,
+                  color: _selectedIndex == 4
+                      ? Theme.of(context).colorScheme.onSurface
+                      : colors.mutedText,
+                ),
+                onPressed: () => setState(() => _selectedIndex = 4),
+              ),
               if (vm.settings.biometricEnabled && vm.biometricAvailable)
                 IconButton(
                   tooltip: 'Lock App',
@@ -155,7 +171,6 @@ class _MinimalBottomNav extends StatelessWidget {
     (label: 'Wallets', icon: Icons.account_balance_wallet_outlined),
     (label: 'Budgets', icon: Icons.pie_chart_outline_rounded),
     (label: 'Reports', icon: Icons.bar_chart_rounded),
-    (label: 'Backup', icon: Icons.cloud_outlined),
   ];
 
   @override
@@ -268,7 +283,6 @@ class _MinimalBottomNav extends StatelessWidget {
                 ),
                 buildTab(2),
                 buildTab(3),
-                buildTab(4),
               ],
             ),
           ),
