@@ -26,7 +26,7 @@ void main() {
       expect(find.text('Total Balance'), findsOneWidget);
 
       // Open Add Transaction bottom sheet
-      await tester.tap(find.text('Add'));
+      await tester.tap(find.byTooltip('Add'));
       await tester.pumpAndSettle();
 
       expect(find.text('New Entry'), findsOneWidget);

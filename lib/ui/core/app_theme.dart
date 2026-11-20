@@ -37,9 +37,9 @@ class MoneyColors extends ThemeExtension<MoneyColors> {
     expense: Color(0xFFE08076),
     transfer: Color(0xFF829AB1),
     warning: Color(0xFFE3B469),
-    cardBorder: Color(0xFF262623),
-    softTint: Color(0xFF242421),
-    mutedText: Color(0xFF8C8A82),
+    cardBorder: Color(0xFF1F1F1F),
+    softTint: Color(0xFF141414),
+    mutedText: Color(0xFF8A8A8E),
   );
 
   @override
@@ -78,17 +78,17 @@ class MoneyColors extends ThemeExtension<MoneyColors> {
   }
 }
 
-/// Minimalist Warm Alabaster (Light) and Matte Obsidian (Dark) themes.
+/// Minimalist Warm Alabaster (Light) and OLED Pitch Black (Dark) themes.
 class AppTheme {
   static const Color lightBackground = Color(0xFFFAF9F6);
   static const Color lightCard = Color(0xFFFFFFFF);
   static const Color lightPrimary = Color(0xFF181816);
   static const Color lightText = Color(0xFF181816);
 
-  static const Color darkBackground = Color(0xFF111110);
-  static const Color darkCard = Color(0xFF181816);
-  static const Color darkPrimary = Color(0xFFF0EEE9);
-  static const Color darkText = Color(0xFFF0EEE9);
+  static const Color darkBackground = Color(0xFF000000);
+  static const Color darkCard = Color(0xFF0A0A0A);
+  static const Color darkPrimary = Color(0xFFF5F5F5);
+  static const Color darkText = Color(0xFFF5F5F5);
 
   static ThemeData light({ColorScheme? dynamicColorScheme}) {
     final scheme = dynamicColorScheme ??
@@ -127,9 +127,9 @@ class AppTheme {
           onSecondaryContainer: darkText,
           surface: darkBackground,
           surfaceContainerLowest: darkCard,
-          surfaceContainerLow: const Color(0xFF181816),
-          surfaceContainer: const Color(0xFF20201D),
-          surfaceContainerHighest: const Color(0xFF2A2A27),
+          surfaceContainerLow: const Color(0xFF0F0F0F),
+          surfaceContainer: const Color(0xFF141414),
+          surfaceContainerHighest: const Color(0xFF1C1C1C),
           onSurface: darkText,
           outlineVariant: MoneyColors.dark.cardBorder,
         );

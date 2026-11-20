@@ -232,7 +232,7 @@ class SettingsTab extends StatelessWidget {
   String _themeLabel(ThemeMode mode) {
     return switch (mode) {
       ThemeMode.light => 'Warm Alabaster (Light)',
-      ThemeMode.dark => 'Matte Obsidian (Dark)',
+      ThemeMode.dark => 'OLED Pitch Black (Dark)',
       ThemeMode.system => 'System',
     };
   }
@@ -395,7 +395,7 @@ class SettingsTab extends StatelessWidget {
               ),
               RadioListTile<ThemeMode>(
                 value: ThemeMode.dark,
-                title: Text('Matte Obsidian (Dark)'),
+                title: Text('OLED Pitch Black (Dark)'),
               ),
               RadioListTile<ThemeMode>(
                 value: ThemeMode.system,

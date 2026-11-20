@@ -123,28 +123,14 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
             index: _selectedIndex,
             children: pages,
           ),
-          floatingActionButton: _selectedIndex <= 2
-              ? FloatingActionButton.extended(
-                  onPressed: () => showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (_) => TransactionFormSheet(viewModel: vm),
-                  ),
-                  elevation: 2,
-                  extendedPadding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 0,
-                  ),
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text(
-                    'Add',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                )
-              : null,
           bottomNavigationBar: _MinimalBottomNav(
             selectedIndex: _selectedIndex,
             onSelect: (index) => setState(() => _selectedIndex = index),
+            onAddTap: () => showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              builder: (_) => TransactionFormSheet(viewModel: vm),
+            ),
           ),
         );
       },
@@ -156,73 +142,135 @@ class _MinimalBottomNav extends StatelessWidget {
   const _MinimalBottomNav({
     required this.selectedIndex,
     required this.onSelect,
+    required this.onAddTap,
   });
 
   final int selectedIndex;
   final ValueChanged<int> onSelect;
+  final VoidCallback onAddTap;
 
-  static const List<String> _labels = <String>[
-    'Overview',
-    'Wallets',
-    'Budgets',
-    'Reports',
-    'Backup',
+  static const List<({String label, IconData icon})> _items =
+      <({String label, IconData icon})>[
+    (label: 'Overview', icon: Icons.home_outlined),
+    (label: 'Wallets', icon: Icons.account_balance_wallet_outlined),
+    (label: 'Budgets', icon: Icons.pie_chart_outline_rounded),
+    (label: 'Reports', icon: Icons.bar_chart_rounded),
+    (label: 'Backup', icon: Icons.cloud_outlined),
   ];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.moneyColors;
-    final barColor = theme.colorScheme.surfaceContainerLowest;
+    final dockColor = theme.colorScheme.surfaceContainerLowest;
+    final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: barColor,
-        border: Border(top: BorderSide(color: colors.cardBorder, width: 1)),
-      ),
-      child: SafeArea(
-        top: false,
+    Widget buildTab(int i) {
+      final selected = i == selectedIndex;
+      final item = _items[i];
+      return Expanded(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            children: List<Widget>.generate(_labels.length, (i) {
-              final selected = i == selectedIndex;
-              return Expanded(
+          padding: const EdgeInsets.symmetric(horizontal: 1),
+          child: Semantics(
+            button: true,
+            selected: selected,
+            label: item.label,
+            child: Material(
+              color: selected ? colors.softTint : Colors.transparent,
+              shape: const StadiumBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => onSelect(i),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: Semantics(
-                    button: true,
-                    selected: selected,
-                    label: _labels[i],
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Icon(
+                        item.icon,
+                        size: 17,
+                        color: selected
+                            ? theme.colorScheme.onSurface
+                            : colors.mutedText,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        item.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 10,
+                          height: 1.1,
+                          fontWeight:
+                              selected ? FontWeight.w600 : FontWeight.w500,
+                          color: selected
+                              ? theme.colorScheme.onSurface
+                              : colors.mutedText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+        child: DecoratedBox(
+          decoration: ShapeDecoration(
+            color: dockColor,
+            shape: StadiumBorder(
+              side: BorderSide(color: colors.cardBorder, width: 1),
+            ),
+            shadows: <BoxShadow>[
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              children: <Widget>[
+                buildTab(0),
+                buildTab(1),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: SizedBox(
+                    width: 40,
+                    height: 40,
                     child: Material(
-                      color: selected ? colors.softTint : Colors.transparent,
-                      shape: const StadiumBorder(),
+                      color: theme.colorScheme.primary,
+                      shape: const CircleBorder(),
                       clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        onTap: () => onSelect(i),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Text(
-                            _labels[i],
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight:
-                                  selected ? FontWeight.w600 : FontWeight.w500,
-                              color: selected
-                                  ? theme.colorScheme.onSurface
-                                  : colors.mutedText,
-                            ),
+                      child: Tooltip(
+                        message: 'Add',
+                        child: InkWell(
+                          onTap: onAddTap,
+                          child: Icon(
+                            Icons.add_rounded,
+                            size: 20,
+                            color: theme.colorScheme.onPrimary,
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              );
-            }),
+                buildTab(2),
+                buildTab(3),
+                buildTab(4),
+              ],
+            ),
           ),
         ),
       ),
