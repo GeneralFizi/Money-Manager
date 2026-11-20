@@ -21,70 +21,32 @@ class SettingsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       children: <Widget>[
-        // Strict Offline Privacy Guarantee Banner
-        Card(
-          color: colors.softTint,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Icon(
-                  Icons.shield_outlined,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        '100% Local-First Privacy',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'All accounts, budgets, and transactions are stored only on this device. '
-                        'The app connects to the internet strictly when you tap a Google Drive backup or restore button below.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // On-Demand Google Drive Backup Card
+        // On-Demand Google Drive Backup + Local Privacy Card
         Card(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Icon(Icons.cloud_upload_outlined, color: colors.transfer),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Google Drive Backup (On-Demand)',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+                const Text(
+                  'Google Drive Backup (On-Demand)',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Saves a readable JSON file inside a visible "MoneyManagerBackups" folder in your Google Drive.',
-                  style: theme.textTheme.bodySmall?.copyWith(
+                  '100% Local-First Privacy',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: colors.income,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'All records stay offline on your device. Internet is used only when you tap Save or Restore to your Drive folder "MoneyManagerBackups".',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.45,
                     color: colors.mutedText,
                   ),
                 ),
@@ -92,7 +54,8 @@ class SettingsTab extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Last Drive backup: ${AppFormatters.dateTimeShort(settings.lastDriveBackupAt!)}',
-                    style: theme.textTheme.labelMedium?.copyWith(
+                    style: TextStyle(
+                      fontSize: 12,
                       color: colors.income,
                       fontWeight: FontWeight.w600,
                     ),
@@ -102,67 +65,84 @@ class SettingsTab extends StatelessWidget {
                 Row(
                   children: <Widget>[
                     Expanded(
-                      child: FilledButton.icon(
-                        onPressed: viewModel.isSyncBusy
-                            ? null
-                            : () => _handleDriveBackup(context),
-                        icon: viewModel.isSyncBusy
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.backup_outlined),
-                        label: const Text('Save to Drive'),
+                      child: Material(
+                        color: theme.colorScheme.primary,
+                        shape: const StadiumBorder(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: viewModel.isSyncBusy
+                              ? null
+                              : () => _handleDriveBackup(context),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            child: Center(
+                              child: viewModel.isSyncBusy
+                                  ? SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: theme.colorScheme.onPrimary,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Save to Drive',
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: theme.colorScheme.onPrimary,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: viewModel.isSyncBusy
-                            ? null
-                            : () => _handleDriveRestore(context),
-                        icon: const Icon(Icons.cloud_download_outlined),
-                        label: const Text('Restore'),
+                      child: Material(
+                        color: Colors.transparent,
+                        shape: StadiumBorder(
+                          side: BorderSide(color: colors.cardBorder, width: 1),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: viewModel.isSyncBusy
+                              ? null
+                              : () => _handleDriveRestore(context),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 11),
+                            child: Center(
+                              child: Text(
+                                'Restore',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _handleShareBackup(context),
-                    icon: const Icon(Icons.ios_share_rounded),
-                    label: const Text('Share Backup File to Drive / Files App'),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => _showOAuthConfigDialog(context),
-                    child: const Text('Configure Google OAuth Client ID'),
-                  ),
                 ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
 
-        // Local Device Backup & Export Card
+        // Unified Local Backup, Currency, Appearance & Security List
         Card(
+          clipBehavior: Clip.antiAlias,
           child: Column(
             children: <Widget>[
-              ListTile(
-                leading: const Icon(Icons.save_alt_rounded),
-                title: const Text('Export JSON Backup to Device'),
-                subtitle: settings.lastLocalExportAt != null
-                    ? Text(
-                        'Last local export: ${AppFormatters.dateTimeShort(settings.lastLocalExportAt!)}',
-                      )
-                    : const Text('Save a readable .json backup offline'),
+              _SettingsRow(
+                label: 'Export JSON',
+                trailingText: settings.lastLocalExportAt != null
+                    ? 'Saved ${AppFormatters.dateShort(settings.lastLocalExportAt!)}'
+                    : 'Local',
                 onTap: () async {
                   final saved = await viewModel.exportLocalJson();
                   if (context.mounted && saved) {
@@ -171,17 +151,15 @@ class SettingsTab extends StatelessWidget {
                 },
               ),
               const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.file_open_outlined),
-                title: const Text('Import JSON Backup from Device'),
-                subtitle: const Text('Restore from a local .json backup file'),
+              _SettingsRow(
+                label: 'Import JSON',
+                trailingText: 'Restore',
                 onTap: () => _handleLocalImport(context),
               ),
               const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.table_chart_outlined),
-                title: const Text('Export Transactions as CSV'),
-                subtitle: const Text('Spreadsheet-ready transaction export'),
+              _SettingsRow(
+                label: 'Export CSV',
+                trailingText: 'Local',
                 onTap: () async {
                   final saved = await viewModel.exportLocalCsv();
                   if (context.mounted && saved) {
@@ -189,58 +167,60 @@ class SettingsTab extends StatelessWidget {
                   }
                 },
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Appearance, Currency & Security
-        Card(
-          child: Column(
-            children: <Widget>[
-              ListTile(
-                leading: const Icon(Icons.currency_exchange_rounded),
-                title: const Text('Currency'),
-                subtitle: Text(
-                  '${settings.currencyCode} (${settings.currencySymbol})',
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
+              const Divider(height: 1),
+              _SettingsRow(
+                label: 'Share Backup File',
+                trailingText: 'Drive / Files',
+                onTap: () => _handleShareBackup(context),
+              ),
+              const Divider(height: 1),
+              _SettingsRow(
+                label: 'Base Currency',
+                trailingText:
+                    '${settings.currencyCode} (${settings.currencySymbol})',
                 onTap: () => _showCurrencyDialog(context),
               ),
               const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.palette_outlined),
-                title: const Text('Appearance'),
-                subtitle: Text(_themeLabel(settings.themeMode)),
-                trailing: const Icon(Icons.chevron_right_rounded),
+              _SettingsRow(
+                label: 'Appearance',
+                trailingText: _themeLabel(settings.themeMode),
                 onTap: () => _showThemeDialog(context),
-              ),
-              const Divider(height: 1),
-              SwitchListTile.adaptive(
-                secondary: const Icon(Icons.color_lens_outlined),
-                title: const Text('Material You Dynamic Color'),
-                subtitle: const Text('Blend system wallpaper colors on Android 12+'),
-                value: settings.useDynamicColor,
-                onChanged: viewModel.updateUseDynamicColor,
               ),
               if (viewModel.biometricAvailable) ...<Widget>[
                 const Divider(height: 1),
-                SwitchListTile.adaptive(
-                  secondary: const Icon(Icons.fingerprint_rounded),
-                  title: const Text('Biometric Lock (Fingerprint / Face ID)'),
-                  subtitle:
-                      const Text('Protect local financial records on launch'),
-                  value: settings.biometricEnabled,
-                  onChanged: viewModel.setBiometricEnabled,
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Row(
+                    children: <Widget>[
+                      const Expanded(
+                        child: Text(
+                          'Biometric Lock (Face ID / Fingerprint)',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: settings.biometricEnabled,
+                        onChanged: viewModel.setBiometricEnabled,
+                      ),
+                    ],
+                  ),
                 ),
               ],
               const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.category_outlined),
-                title: const Text('Manage Categories'),
-                subtitle: Text('${viewModel.categories.length} categories'),
-                trailing: const Icon(Icons.chevron_right_rounded),
+              _SettingsRow(
+                label: 'Manage Categories',
+                trailingText: '${viewModel.categories.length}',
                 onTap: () => _showCategoriesManager(context),
+              ),
+              const Divider(height: 1),
+              _SettingsRow(
+                label: 'Google OAuth Client ID',
+                trailingText: 'Configure',
+                onTap: () => _showOAuthConfigDialog(context),
               ),
             ],
           ),
@@ -251,9 +231,9 @@ class SettingsTab extends StatelessWidget {
 
   String _themeLabel(ThemeMode mode) {
     return switch (mode) {
-      ThemeMode.light => 'Soft Light (Warm Sage)',
-      ThemeMode.dark => 'Low-Glare Dark (Deep Slate)',
-      ThemeMode.system => 'Follow Device System',
+      ThemeMode.light => 'Warm Alabaster (Light)',
+      ThemeMode.dark => 'Matte Obsidian (Dark)',
+      ThemeMode.system => 'System',
     };
   }
 
@@ -411,15 +391,15 @@ class SettingsTab extends StatelessWidget {
             children: <Widget>[
               RadioListTile<ThemeMode>(
                 value: ThemeMode.light,
-                title: Text('Soft Light (Warm Sage)'),
+                title: Text('Warm Alabaster (Light)'),
               ),
               RadioListTile<ThemeMode>(
                 value: ThemeMode.dark,
-                title: Text('Low-Glare Dark (Deep Slate)'),
+                title: Text('Matte Obsidian (Dark)'),
               ),
               RadioListTile<ThemeMode>(
                 value: ThemeMode.system,
-                title: Text('Follow Device System'),
+                title: Text('System'),
               ),
             ],
           ),
@@ -603,6 +583,47 @@ class SettingsTab extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({
+    required this.label,
+    required this.trailingText,
+    required this.onTap,
+  });
+
+  final String label;
+  final String trailingText;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.moneyColors;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              trailingText,
+              style: TextStyle(fontSize: 12, color: colors.mutedText),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

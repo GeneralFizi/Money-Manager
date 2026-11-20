@@ -20,31 +20,28 @@ class ReportsTab extends StatelessWidget {
     final slices = viewModel.expenseBreakdownByCategory;
     final cashflow = viewModel.sixMonthCashflow;
 
+    final shades = <Color>[
+      theme.colorScheme.primary,
+      colors.transfer,
+      colors.mutedText,
+      colors.expense,
+      colors.income,
+      colors.warning,
+    ];
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       children: <Widget>[
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            IconButton.outlined(
-              onPressed: () => viewModel.changeMonth(-1),
-              icon: const Icon(Icons.chevron_left_rounded),
-              tooltip: 'Previous Month',
+        Center(
+          child: MinimalMonthSwitcher(
+            month: viewModel.selectedMonth,
+            onChangeMonth: viewModel.changeMonth,
+            textStyle: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
-            Text(
-              AppFormatters.monthYear(viewModel.selectedMonth),
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            IconButton.outlined(
-              onPressed: () => viewModel.changeMonth(1),
-              icon: const Icon(Icons.chevron_right_rounded),
-              tooltip: 'Next Month',
-            ),
-          ],
+          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
 
         // Monthly Net Summary
         Card(
@@ -83,7 +80,7 @@ class ReportsTab extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
 
         // Expense Breakdown Donut Chart
         Card(
@@ -94,18 +91,20 @@ class ReportsTab extends StatelessWidget {
               children: <Widget>[
                 Text(
                   'Spending by Category',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: colors.mutedText,
                   ),
                 ),
                 const SizedBox(height: 16),
                 if (slices.isEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    padding: const EdgeInsets.symmetric(vertical: 20),
                     child: Center(
                       child: Text(
                         'No expenses recorded for ${AppFormatters.monthYear(viewModel.selectedMonth)}.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
+                        style: theme.textTheme.bodySmall?.copyWith(
                           color: colors.mutedText,
                         ),
                       ),
@@ -113,66 +112,55 @@ class ReportsTab extends StatelessWidget {
                   )
                 else ...<Widget>[
                   SizedBox(
-                    height: 200,
+                    height: 168,
                     child: PieChart(
                       PieChartData(
-                        sectionsSpace: 3,
-                        centerSpaceRadius: 54,
-                        sections: slices.map((slice) {
-                          return PieChartSectionData(
-                            value: slice.amount,
-                            color: slice.category.color,
-                            radius: 32,
-                            title: slice.percentage >= 8
-                                ? '${slice.percentage.toStringAsFixed(0)}%'
-                                : '',
-                            titleStyle: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
-                            ),
-                          );
-                        }).toList(),
+                        sectionsSpace: 2.5,
+                        centerSpaceRadius: 48,
+                        sections: List<PieChartSectionData>.generate(
+                          slices.length,
+                          (idx) {
+                            return PieChartSectionData(
+                              value: slices[idx].amount,
+                              color: shades[idx % shades.length],
+                              radius: 24,
+                              title: '',
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  for (final slice in slices) ...<Widget>[
+                  for (int idx = 0; idx < slices.length; idx++) ...<Widget>[
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      padding: const EdgeInsets.symmetric(vertical: 5),
                       child: Row(
                         children: <Widget>[
                           Container(
-                            width: 12,
-                            height: 12,
+                            width: 8,
+                            height: 8,
                             decoration: BoxDecoration(
-                              color: slice.category.color,
-                              borderRadius: BorderRadius.circular(4),
+                              color: shades[idx % shades.length],
+                              shape: BoxShape.circle,
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              slice.category.name,
-                              style: theme.textTheme.bodyMedium?.copyWith(
+                              slices[idx].category.name,
+                              style: const TextStyle(
+                                fontSize: 13,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
                           Text(
-                            '${slice.percentage.toStringAsFixed(1)}%',
+                            '${slices[idx].percentage.toStringAsFixed(0)}% · ${AppFormatters.money(slices[idx].amount, symbol)}',
                             style: AppTheme.tabular(
-                              theme.textTheme.bodySmall?.copyWith(
-                                color: colors.mutedText,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            AppFormatters.money(slice.amount, symbol),
-                            style: AppTheme.tabular(
-                              theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
+                              const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -185,7 +173,7 @@ class ReportsTab extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
 
         // 6-Month Cashflow Bar Chart
         Card(
@@ -199,25 +187,32 @@ class ReportsTab extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       '6-Month Cashflow',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: colors.mutedText,
                       ),
                     ),
-                    Row(
-                      children: <Widget>[
-                        _LegendDot(color: colors.income, label: 'In'),
-                        const SizedBox(width: 10),
-                        _LegendDot(color: colors.expense, label: 'Out'),
-                      ],
+                    Text(
+                      '${AppFormatters.money(viewModel.monthlyNet, symbol, showPlusSign: viewModel.monthlyNet > 0)} net',
+                      style: AppTheme.tabular(
+                        TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: viewModel.monthlyNet >= 0
+                              ? colors.income
+                              : colors.expense,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
                 _CashflowBarChart(
                   points: cashflow,
                   symbol: symbol,
-                  incomeColor: colors.income,
-                  expenseColor: colors.expense,
+                  incomeColor: theme.colorScheme.primary,
+                  expenseColor: colors.mutedText.withValues(alpha: 0.45),
                   mutedText: colors.mutedText,
                   gridColor: colors.cardBorder,
                 ),
@@ -260,35 +255,10 @@ class _MetricColumn extends StatelessWidget {
           style: AppTheme.tabular(
             theme.textTheme.titleSmall?.copyWith(
               color: color,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.color, required this.label});
-
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(label, style: Theme.of(context).textTheme.labelSmall),
       ],
     );
   }

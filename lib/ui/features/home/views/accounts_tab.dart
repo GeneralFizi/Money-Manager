@@ -29,7 +29,7 @@ class AccountsTab extends StatelessWidget {
       children: <Widget>[
         Card(
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(18),
             child: Row(
               children: <Widget>[
                 Expanded(
@@ -37,66 +37,82 @@ class AccountsTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        'Combined Net Worth ($baseCode)',
-                        style: theme.textTheme.bodyMedium?.copyWith(
+                        'All wallets ($baseCode)',
+                        style: TextStyle(
+                          fontSize: 12,
                           color: colors.mutedText,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Text(
                         AppFormatters.money(viewModel.totalNetBalance, baseSymbol),
                         style: AppTheme.tabular(
-                          theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
+                          theme.textTheme.headlineSmall?.copyWith(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                FilledButton.tonalIcon(
-                  onPressed: () => showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (_) => TransactionFormSheet(
-                      viewModel: viewModel,
-                      initialType: TransactionType.transfer,
+                Wrap(
+                  spacing: 6,
+                  children: <Widget>[
+                    MinimalPill(
+                      label: 'Transfer',
+                      onTap: () => showModalBottomSheet<void>(
+                        context: context,
+                        isScrollControlled: true,
+                        builder: (_) => TransactionFormSheet(
+                          viewModel: viewModel,
+                          initialType: TransactionType.transfer,
+                        ),
+                      ),
                     ),
-                  ),
-                  icon: const Icon(Icons.swap_horiz_rounded),
-                  label: const Text('Transfer'),
+                    MinimalPill(
+                      label: '+ Wallet',
+                      filledInk: true,
+                      onTap: () => _showAccountDialog(context),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            Text(
-              'Your Wallets (${summaries.length})',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            'Your Wallets (${summaries.length})',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: colors.mutedText,
             ),
-            TextButton.icon(
-              onPressed: () => _showAccountDialog(context),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Add Wallet'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        for (final summary in summaries) ...<Widget>[
-          _WalletCard(
-            summary: summary,
-            baseCode: baseCode,
-            baseSymbol: baseSymbol,
-            onTap: () => _showAccountDialog(context, existing: summary.account),
           ),
-          const SizedBox(height: 10),
-        ],
+        ),
+        Card(
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: <Widget>[
+              for (int i = 0; i < summaries.length; i++) ...<Widget>[
+                if (i > 0) const Divider(height: 1),
+                _WalletRow(
+                  summary: summaries[i],
+                  baseCode: baseCode,
+                  baseSymbol: baseSymbol,
+                  onTap: () => _showAccountDialog(
+                    context,
+                    existing: summaries[i].account,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -115,8 +131,8 @@ class AccountsTab extends StatelessWidget {
   }
 }
 
-class _WalletCard extends StatelessWidget {
-  const _WalletCard({
+class _WalletRow extends StatelessWidget {
+  const _WalletRow({
     required this.summary,
     required this.baseCode,
     required this.baseSymbol,
@@ -130,124 +146,78 @@ class _WalletCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final colors = context.moneyColors;
     final acc = summary.account;
     final walletSymbol = acc.effectiveCurrencySymbol(baseSymbol);
     final walletCode = acc.effectiveCurrencyCode(baseCode);
     final isForeign = acc.isForeignCurrency(baseCode);
 
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: acc.color.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(acc.icon, color: acc.color),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          acc.name,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          isForeign
-                              ? '${acc.type.label} • $walletCode'
-                              : acc.type.label,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.mutedText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        AppFormatters.money(
-                          summary.currentBalance,
-                          walletSymbol,
-                        ),
-                        style: AppTheme.tabular(
-                          theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                        acc.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (isForeign)
-                        Text(
-                          '≈ ${AppFormatters.money(summary.currentBalanceInBase, baseSymbol)}',
-                          style: AppTheme.tabular(
-                            theme.textTheme.bodySmall?.copyWith(
-                              color: colors.mutedText,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isForeign
+                            ? '${acc.type.label} · $walletCode'
+                            : acc.type.label,
+                        style: TextStyle(fontSize: 12, color: colors.mutedText),
+                      ),
                     ],
                   ),
-                ],
-              ),
-              if (isForeign) ...<Widget>[
-                const SizedBox(height: 6),
-                Text(
-                  'Offline rate: 1 $walletCode = ${acc.exchangeRateToBase} $baseCode',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colors.mutedText,
-                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: <Widget>[
+                    Text(
+                      AppFormatters.money(
+                        summary.currentBalance,
+                        walletSymbol,
+                      ),
+                      style: AppTheme.tabular(
+                        const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (isForeign)
+                      Text(
+                        '≈ ${AppFormatters.money(summary.currentBalanceInBase, baseSymbol)}',
+                        style: AppTheme.tabular(
+                          TextStyle(fontSize: 11.5, color: colors.mutedText),
+                        ),
+                      ),
+                  ],
                 ),
               ],
-              const SizedBox(height: 12),
-              const Divider(height: 1),
+            ),
+            if (isForeign) ...<Widget>[
               const SizedBox(height: 10),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      'In: ${AppFormatters.money(summary.totalIncome, walletSymbol)}',
-                      style: AppTheme.tabular(
-                        theme.textTheme.bodySmall?.copyWith(
-                          color: colors.income,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Out: ${AppFormatters.money(summary.totalExpense, walletSymbol)}',
-                      textAlign: TextAlign.end,
-                      style: AppTheme.tabular(
-                        theme.textTheme.bodySmall?.copyWith(
-                          color: colors.expense,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              Text(
+                'Offline rate: 1 $walletCode = ${acc.exchangeRateToBase} $baseCode',
+                style: TextStyle(fontSize: 11.5, color: colors.mutedText),
               ),
             ],
-          ),
+          ],
         ),
       ),
     );

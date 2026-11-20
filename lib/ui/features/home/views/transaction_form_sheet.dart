@@ -173,50 +173,90 @@ class _TransactionFormSheetState extends State<TransactionFormSheet> {
           children: <Widget>[
             Center(
               child: Container(
-                width: 40,
+                width: 36,
                 height: 4,
                 decoration: BoxDecoration(
                   color: colors.cardBorder,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(999),
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              widget.existing == null ? 'New Entry' : 'Edit Entry',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 14),
-            SegmentedButton<TransactionType>(
-              segments: const <ButtonSegment<TransactionType>>[
-                ButtonSegment<TransactionType>(
-                  value: TransactionType.expense,
-                  label: Text('Expense'),
-                  icon: Icon(Icons.arrow_upward_rounded, size: 18),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(
+                  widget.existing == null ? 'New Entry' : 'Edit Entry',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                ButtonSegment<TransactionType>(
-                  value: TransactionType.income,
-                  label: Text('Income'),
-                  icon: Icon(Icons.arrow_downward_rounded, size: 18),
-                ),
-                ButtonSegment<TransactionType>(
-                  value: TransactionType.transfer,
-                  label: Text('Transfer'),
-                  icon: Icon(Icons.swap_horiz_rounded, size: 18),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(false),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: colors.mutedText,
+                      ),
+                    ),
+                  ),
                 ),
               ],
-              selected: <TransactionType>{_type},
-              onSelectionChanged: (set) {
-                setState(() {
-                  _type = set.first;
-                  _error = null;
-                  _ensureValidCategory();
-                });
-              },
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: colors.cardBorder),
+              ),
+              child: Row(
+                children: TransactionType.values.map((t) {
+                  final active = _type == t;
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _type = t;
+                          _error = null;
+                          _ensureValidCategory();
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 7),
+                        decoration: BoxDecoration(
+                          color: active
+                              ? theme.colorScheme.surfaceContainerLowest
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          t.label,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight:
+                                active ? FontWeight.w600 : FontWeight.w500,
+                            color: active
+                                ? theme.colorScheme.onSurface
+                                : colors.mutedText,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 16),
             TextField(
               controller: _amountController,
               autofocus: widget.existing == null,
@@ -228,13 +268,29 @@ class _TransactionFormSheetState extends State<TransactionFormSheet> {
               ],
               style: AppTheme.tabular(
                 theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               decoration: InputDecoration(
                 labelText: 'Amount',
+                labelStyle: TextStyle(fontSize: 13, color: colors.mutedText),
                 prefixText: '$walletSymbol ',
                 hintText: '0.00',
+                filled: false,
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                border: UnderlineInputBorder(
+                  borderSide: BorderSide(color: colors.cardBorder),
+                ),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: colors.cardBorder),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(
+                    color: theme.colorScheme.primary,
+                    width: 1.5,
+                  ),
+                ),
               ),
             ),
             if (isForeign && selectedAccount != null) ...<Widget>[
@@ -242,30 +298,28 @@ class _TransactionFormSheetState extends State<TransactionFormSheet> {
               Text(
                 '≈ ${AppFormatters.money(convertedBase, baseSymbol)} ($baseCode at 1 ${selectedAccount.currencyCode} = ${selectedAccount.exchangeRateToBase} $baseCode)',
                 style: AppTheme.tabular(
-                  theme.textTheme.bodySmall?.copyWith(
-                    color: colors.mutedText,
-                  ),
+                  TextStyle(fontSize: 12, color: colors.mutedText),
                 ),
               ),
             ],
             const SizedBox(height: 16),
             Text(
               _type == TransactionType.transfer ? 'From Wallet' : 'Wallet',
-              style: theme.textTheme.labelLarge?.copyWith(
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
                 color: colors.mutedText,
               ),
             ),
             const SizedBox(height: 8),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: 6,
+              runSpacing: 6,
               children: accounts.map((acc) {
-                final selected = acc.id == _accountId;
-                return ChoiceChip(
-                  avatar: Icon(acc.icon, size: 18),
-                  label: Text(acc.name),
-                  selected: selected,
-                  onSelected: (_) {
+                return MinimalPill(
+                  label: acc.name,
+                  filledInk: acc.id == _accountId,
+                  onTap: () {
                     setState(() {
                       _accountId = acc.id;
                       if (_toAccountId == _accountId && accounts.length > 1) {
@@ -278,92 +332,89 @@ class _TransactionFormSheetState extends State<TransactionFormSheet> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             if (_type == TransactionType.transfer) ...<Widget>[
               Text(
                 'To Wallet',
-                style: theme.textTheme.labelLarge?.copyWith(
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                   color: colors.mutedText,
                 ),
               ),
               const SizedBox(height: 8),
               if (accounts.length < 2)
                 Text(
-                  'Create a second wallet in the Accounts tab to log transfers.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colors.expense,
-                  ),
+                  'Create a second wallet in the Wallets tab to log transfers.',
+                  style: TextStyle(fontSize: 12.5, color: colors.expense),
                 )
               else
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: 6,
+                  runSpacing: 6,
                   children: accounts
                       .where((a) => a.id != _accountId)
                       .map((acc) {
-                    return ChoiceChip(
-                      avatar: Icon(acc.icon, size: 18),
-                      label: Text(acc.name),
-                      selected: acc.id == _toAccountId,
-                      onSelected: (_) => setState(() => _toAccountId = acc.id),
+                    return MinimalPill(
+                      label: acc.name,
+                      filledInk: acc.id == _toAccountId,
+                      onTap: () => setState(() => _toAccountId = acc.id),
                     );
                   }).toList(),
                 ),
             ] else ...<Widget>[
               Text(
                 'Category',
-                style: theme.textTheme.labelLarge?.copyWith(
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                   color: colors.mutedText,
                 ),
               ),
               const SizedBox(height: 8),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: 6,
+                runSpacing: 6,
                 children: categories.map((CategoryItem cat) {
-                  final selected = cat.id == _categoryId;
-                  return ChoiceChip(
-                    avatar: Icon(cat.icon, size: 18, color: cat.color),
-                    label: Text(cat.name),
-                    selected: selected,
-                    onSelected: (_) => setState(() => _categoryId = cat.id),
+                  return MinimalPill(
+                    label: cat.name,
+                    selected: cat.id == _categoryId,
+                    onTap: () => setState(() => _categoryId = cat.id),
                   );
                 }).toList(),
               ),
             ],
-            const SizedBox(height: 16),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _pickDate,
-                    icon: const Icon(Icons.calendar_today_outlined, size: 18),
-                    label: Text(AppFormatters.dateShort(_date)),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 14),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: MinimalPill(
+                label: AppFormatters.dateShort(_date),
+                onTap: _pickDate,
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _noteController,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Note (optional)',
-                hintText: 'e.g., Lunch with team',
-                prefixIcon: Icon(Icons.notes_rounded),
+              style: const TextStyle(fontSize: 13),
+              decoration: InputDecoration(
+                hintText: 'Note (optional)',
+                hintStyle: TextStyle(fontSize: 13, color: colors.mutedText),
+                isDense: true,
               ),
             ),
             if (_error != null) ...<Widget>[
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Text(
                 _error!,
-                style: theme.textTheme.bodySmall?.copyWith(
+                style: TextStyle(
+                  fontSize: 12,
                   color: colors.expense,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ],
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             FilledButton(
               onPressed: _saving ? null : _submit,
               child: Text(widget.existing == null ? 'Save Entry' : 'Update Entry'),

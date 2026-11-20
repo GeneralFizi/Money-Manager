@@ -30,34 +30,34 @@ class OverviewTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       children: <Widget>[
         _NetBalanceHeroCard(viewModel: viewModel, symbol: symbol),
-        const SizedBox(height: 16),
-        _MonthAndSearchBar(viewModel: viewModel),
+        const SizedBox(height: 12),
+        _SearchBar(onChanged: viewModel.setSearchQuery),
         const SizedBox(height: 10),
         _FilterChipsRow(viewModel: viewModel),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         if (sortedDays.isEmpty)
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(28),
+              padding: const EdgeInsets.all(26),
               child: Column(
                 children: <Widget>[
                   Icon(
                     Icons.receipt_long_outlined,
-                    size: 40,
+                    size: 32,
                     color: colors.mutedText,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Text(
                     'No transactions for ${AppFormatters.monthYear(viewModel.selectedMonth)}',
-                    style: theme.textTheme.titleMedium?.copyWith(
+                    style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
-                    'Tap the + button below to log an income, expense, or wallet transfer offline.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    'Tap + Add below to log an income, expense, or transfer offline.',
+                    style: theme.textTheme.bodySmall?.copyWith(
                       color: colors.mutedText,
                     ),
                     textAlign: TextAlign.center,
@@ -69,16 +69,18 @@ class OverviewTab extends StatelessWidget {
         else
           for (final day in sortedDays) ...<Widget>[
             Padding(
-              padding: const EdgeInsets.only(left: 4, top: 8, bottom: 8),
+              padding: const EdgeInsets.only(left: 4, top: 6, bottom: 6),
               child: Text(
                 AppFormatters.dayHeader(day),
-                style: theme.textTheme.labelLarge?.copyWith(
+                style: TextStyle(
+                  fontSize: 12,
                   color: colors.mutedText,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
             Card(
+              clipBehavior: Clip.antiAlias,
               child: Column(
                 children: <Widget>[
                   for (int i = 0; i < grouped[day]!.length; i++) ...<Widget>[
@@ -115,7 +117,7 @@ class _NetBalanceHeroCard extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -124,41 +126,45 @@ class _NetBalanceHeroCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   'Total Balance',
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  style: TextStyle(
+                    fontSize: 12,
                     color: colors.mutedText,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                Text(
-                  AppFormatters.monthYear(viewModel.selectedMonth),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colors.mutedText,
-                  ),
+                MinimalMonthSwitcher(
+                  month: viewModel.selectedMonth,
+                  onChangeMonth: viewModel.changeMonth,
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
               AppFormatters.money(viewModel.totalNetBalance, symbol),
               style: AppTheme.tabular(
-                theme.textTheme.headlineLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
+                theme.textTheme.headlineMedium?.copyWith(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w600,
                   letterSpacing: -0.6,
                 ),
               ),
             ),
-            const Divider(height: 24),
+            const Divider(height: 22),
             Row(
               children: <Widget>[
                 _InlineMetric(
                   label: 'In',
-                  amount: AppFormatters.money(viewModel.monthlyIncome, symbol),
+                  amount: AppFormatters.money(
+                    viewModel.monthlyIncome,
+                    symbol,
+                    showPlusSign: true,
+                  ),
                   color: colors.income,
                 ),
                 Container(
-                  height: 16,
+                  height: 14,
                   width: 1,
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  margin: const EdgeInsets.symmetric(horizontal: 14),
                   color: colors.cardBorder,
                 ),
                 _InlineMetric(
@@ -188,14 +194,14 @@ class _InlineMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final colors = context.moneyColors;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Text(
           '$label ',
-          style: theme.textTheme.bodySmall?.copyWith(
+          style: TextStyle(
+            fontSize: 12,
             color: colors.mutedText,
             fontWeight: FontWeight.w500,
           ),
@@ -203,9 +209,10 @@ class _InlineMetric extends StatelessWidget {
         Text(
           amount,
           style: AppTheme.tabular(
-            theme.textTheme.titleSmall?.copyWith(
+            TextStyle(
+              fontSize: 13,
               color: color,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -214,47 +221,41 @@ class _InlineMetric extends StatelessWidget {
   }
 }
 
-class _MonthAndSearchBar extends StatelessWidget {
-  const _MonthAndSearchBar({required this.viewModel});
+class _SearchBar extends StatelessWidget {
+  const _SearchBar({required this.onChanged});
 
-  final AppViewModel viewModel;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      children: <Widget>[
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            IconButton.outlined(
-              onPressed: () => viewModel.changeMonth(-1),
-              icon: const Icon(Icons.chevron_left_rounded),
-              tooltip: 'Previous Month',
-            ),
-            Text(
-              AppFormatters.monthYear(viewModel.selectedMonth),
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            IconButton.outlined(
-              onPressed: () => viewModel.changeMonth(1),
-              icon: const Icon(Icons.chevron_right_rounded),
-              tooltip: 'Next Month',
-            ),
-          ],
+    final colors = context.moneyColors;
+    return TextField(
+      onChanged: onChanged,
+      style: const TextStyle(fontSize: 13),
+      decoration: InputDecoration(
+        hintText: 'Search notes, categories, or wallets...',
+        hintStyle: TextStyle(fontSize: 13, color: colors.mutedText),
+        prefixIcon: Icon(
+          Icons.search_rounded,
+          size: 18,
+          color: colors.mutedText,
         ),
-        const SizedBox(height: 12),
-        TextField(
-          onChanged: viewModel.setSearchQuery,
-          decoration: const InputDecoration(
-            hintText: 'Search notes, categories, or wallets...',
-            prefixIcon: Icon(Icons.search_rounded),
-            isDense: true,
-          ),
+        prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 36),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(999),
+          borderSide: BorderSide(color: colors.cardBorder),
         ),
-      ],
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(999),
+          borderSide: BorderSide(color: colors.cardBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(999),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
+        ),
+      ),
     );
   }
 }
@@ -271,21 +272,22 @@ class _FilterChipsRow extends StatelessWidget {
       child: Row(
         children: <Widget>[
           for (final type in TransactionType.values) ...<Widget>[
-            FilterChip(
-              label: Text(type.label),
+            MinimalPill(
+              label: type.label,
               selected: viewModel.selectedTypeFilter == type,
-              onSelected: (_) => viewModel.setTypeFilter(type),
+              onTap: () => viewModel.setTypeFilter(type),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
           ],
           for (final acc in viewModel.accounts) ...<Widget>[
-            FilterChip(
-              avatar: Icon(acc.icon, size: 16),
-              label: Text(acc.name),
+            MinimalPill(
+              label: acc.name,
               selected: viewModel.selectedAccountFilterId == acc.id,
-              onSelected: (_) => viewModel.setAccountFilter(acc.id),
+              onTap: () => viewModel.setAccountFilter(acc.id),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
           ],
         ],
       ),
@@ -317,7 +319,6 @@ class _TransactionTile extends StatelessWidget {
     final isForeign = fromAccount?.isForeignCurrency(baseCode) ?? false;
 
     final Color accentColor;
-    final IconData badgeIcon;
     final String title;
     final String subtitle;
     final String amountText;
@@ -325,31 +326,28 @@ class _TransactionTile extends StatelessWidget {
     switch (tx.type) {
       case TransactionType.income:
         accentColor = colors.income;
-        badgeIcon = category?.icon ?? Icons.arrow_downward_rounded;
         title = category?.name ?? 'Income';
         subtitle = [
           fromAccount?.name ?? 'Wallet',
           if (tx.note.isNotEmpty) tx.note,
-        ].join(' • ');
+        ].join(' · ');
         amountText =
             AppFormatters.money(tx.amount, nativeSymbol, showPlusSign: true);
       case TransactionType.expense:
         accentColor = colors.expense;
-        badgeIcon = category?.icon ?? Icons.arrow_upward_rounded;
         title = category?.name ?? 'Expense';
         subtitle = [
           fromAccount?.name ?? 'Wallet',
           if (tx.note.isNotEmpty) tx.note,
-        ].join(' • ');
+        ].join(' · ');
         amountText =
             AppFormatters.money(tx.amount, nativeSymbol, showMinusSign: true);
       case TransactionType.transfer:
         accentColor = colors.transfer;
-        badgeIcon = Icons.swap_horiz_rounded;
         title = 'Wallet Transfer';
         final route =
             '${fromAccount?.name ?? 'Wallet'} → ${toAccount?.name ?? 'Wallet'}';
-        subtitle = tx.note.isNotEmpty ? '$route • ${tx.note}' : route;
+        subtitle = tx.note.isNotEmpty ? '$route · ${tx.note}' : route;
         amountText = AppFormatters.money(tx.amount, nativeSymbol);
     }
 
@@ -375,72 +373,65 @@ class _TransactionTile extends StatelessWidget {
           ),
         );
       },
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: (category?.color ?? accentColor).withValues(alpha: 0.13),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(
-            badgeIcon,
-            color: category?.color ?? accentColor,
-            size: 22,
-          ),
-        ),
-        title: Text(
-          title,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(color: colors.mutedText),
-        ),
-        trailing: isForeign
-            ? Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: <Widget>[
-                  Text(
-                    amountText,
-                    style: AppTheme.tabular(
-                      theme.textTheme.titleMedium?.copyWith(
-                        color: accentColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    '≈ ${AppFormatters.money(viewModel.amountInBase(tx), symbol)}',
-                    style: AppTheme.tabular(
-                      theme.textTheme.labelSmall?.copyWith(
-                        color: colors.mutedText,
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : Text(
-                amountText,
-                style: AppTheme.tabular(
-                  theme.textTheme.titleMedium?.copyWith(
-                    color: accentColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+      child: InkWell(
         onTap: () => showModalBottomSheet<void>(
           context: context,
           isScrollControlled: true,
           builder: (_) => TransactionFormSheet(
             viewModel: viewModel,
             existing: tx,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      title,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, color: colors.mutedText),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: <Widget>[
+                  Text(
+                    amountText,
+                    style: AppTheme.tabular(
+                      TextStyle(
+                        fontSize: 13.5,
+                        color: accentColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (isForeign)
+                    Text(
+                      '≈ ${AppFormatters.money(viewModel.amountInBase(tx), symbol)}',
+                      style: AppTheme.tabular(
+                        TextStyle(fontSize: 11, color: colors.mutedText),
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

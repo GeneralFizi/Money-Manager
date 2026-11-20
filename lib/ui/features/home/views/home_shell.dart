@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/app_theme.dart';
 import '../../auth/views/lock_screen.dart';
 import '../view_models/app_view_model.dart';
 import 'accounts_tab.dart';
@@ -73,9 +74,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         const titles = <String>[
           'Money Manager',
           'Wallets',
-          'Budgets & Bills',
+          'Budgets',
           'Reports',
-          'Backup & Settings',
+          'Sync & Backup',
         ];
 
         final pages = <Widget>[
@@ -86,14 +87,34 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           SettingsTab(viewModel: vm),
         ];
 
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final colors = context.moneyColors;
+
         return Scaffold(
           appBar: AppBar(
             title: Text(titles[_selectedIndex]),
             actions: <Widget>[
+              IconButton(
+                tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+                icon: Icon(
+                  isDark
+                      ? Icons.light_mode_outlined
+                      : Icons.dark_mode_outlined,
+                  size: 20,
+                  color: colors.mutedText,
+                ),
+                onPressed: () => vm.updateThemeMode(
+                  isDark ? ThemeMode.light : ThemeMode.dark,
+                ),
+              ),
               if (vm.settings.biometricEnabled && vm.biometricAvailable)
                 IconButton(
                   tooltip: 'Lock App',
-                  icon: const Icon(Icons.lock_outline_rounded),
+                  icon: Icon(
+                    Icons.lock_outline_rounded,
+                    size: 20,
+                    color: colors.mutedText,
+                  ),
                   onPressed: vm.lockIfEnabled,
                 ),
             ],
@@ -109,45 +130,102 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                     isScrollControlled: true,
                     builder: (_) => TransactionFormSheet(viewModel: vm),
                   ),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Add'),
+                  elevation: 2,
+                  extendedPadding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 0,
+                  ),
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text(
+                    'Add',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                 )
               : null,
-          bottomNavigationBar: NavigationBar(
+          bottomNavigationBar: _MinimalBottomNav(
             selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) {
-              setState(() => _selectedIndex = index);
-            },
-            destinations: const <NavigationDestination>[
-              NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home_rounded),
-                label: 'Overview',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.account_balance_wallet_outlined),
-                selectedIcon: Icon(Icons.account_balance_wallet_rounded),
-                label: 'Wallets',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.pie_chart_outline_rounded),
-                selectedIcon: Icon(Icons.track_changes_rounded),
-                label: 'Budgets',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.bar_chart_outlined),
-                selectedIcon: Icon(Icons.bar_chart_rounded),
-                label: 'Reports',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.cloud_done_outlined),
-                selectedIcon: Icon(Icons.cloud_done_rounded),
-                label: 'Backup',
-              ),
-            ],
+            onSelect: (index) => setState(() => _selectedIndex = index),
           ),
         );
       },
+    );
+  }
+}
+
+class _MinimalBottomNav extends StatelessWidget {
+  const _MinimalBottomNav({
+    required this.selectedIndex,
+    required this.onSelect,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
+
+  static const List<String> _labels = <String>[
+    'Overview',
+    'Wallets',
+    'Budgets',
+    'Reports',
+    'Backup',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.moneyColors;
+    final barColor = theme.colorScheme.surfaceContainerLowest;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: barColor,
+        border: Border(top: BorderSide(color: colors.cardBorder, width: 1)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            children: List<Widget>.generate(_labels.length, (i) {
+              final selected = i == selectedIndex;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Semantics(
+                    button: true,
+                    selected: selected,
+                    label: _labels[i],
+                    child: Material(
+                      color: selected ? colors.softTint : Colors.transparent,
+                      shape: const StadiumBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () => onSelect(i),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            _labels[i],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight:
+                                  selected ? FontWeight.w600 : FontWeight.w500,
+                              color: selected
+                                  ? theme.colorScheme.onSurface
+                                  : colors.mutedText,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
     );
   }
 }

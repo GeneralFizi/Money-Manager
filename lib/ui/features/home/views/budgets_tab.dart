@@ -26,44 +26,28 @@ class BudgetsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       children: <Widget>[
-        // Month Switcher Header
+        // Monthly Category Budgets Header
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
-            IconButton.outlined(
-              onPressed: () => viewModel.changeMonth(-1),
-              icon: const Icon(Icons.chevron_left_rounded),
-              tooltip: 'Previous Month',
-            ),
-            Text(
-              AppFormatters.monthYear(viewModel.selectedMonth),
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+            Expanded(
+              child: Text(
+                'Monthly Budgets',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: colors.mutedText,
+                ),
               ),
             ),
-            IconButton.outlined(
-              onPressed: () => viewModel.changeMonth(1),
-              icon: const Icon(Icons.chevron_right_rounded),
-              tooltip: 'Next Month',
+            MinimalMonthSwitcher(
+              month: viewModel.selectedMonth,
+              onChangeMonth: viewModel.changeMonth,
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // Monthly Category Budgets Section
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            Text(
-              'Monthly Budgets',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            TextButton.icon(
-              onPressed: () => _showSetBudgetDialog(context),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Set Budget'),
+            const SizedBox(width: 6),
+            MinimalPill(
+              label: '+ Set Budget',
+              onTap: () => _showSetBudgetDialog(context),
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
             ),
           ],
         ),
@@ -73,40 +57,52 @@ class BudgetsTab extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Text(
-                'No monthly category limits set for ${AppFormatters.monthYear(viewModel.selectedMonth)}. Tap "Set Budget" to track spending targets.',
-                style: theme.textTheme.bodyMedium?.copyWith(
+                'No monthly category limits set for ${AppFormatters.monthYear(viewModel.selectedMonth)}. Tap "+ Set Budget" to track spending targets.',
+                style: theme.textTheme.bodySmall?.copyWith(
                   color: colors.mutedText,
                 ),
               ),
             ),
           )
         else
-          for (final item in budgets) ...<Widget>[
-            _BudgetCard(
-              progress: item,
-              symbol: symbol,
-              onTap: () => _showSetBudgetDialog(context, existing: item.budget),
-              onDelete: () => viewModel.deleteBudget(item.budget.id),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: <Widget>[
+                for (int i = 0; i < budgets.length; i++) ...<Widget>[
+                  if (i > 0) const Divider(height: 1),
+                  _BudgetRow(
+                    progress: budgets[i],
+                    symbol: symbol,
+                    onTap: () => _showSetBudgetDialog(
+                      context,
+                      existing: budgets[i].budget,
+                    ),
+                    onDelete: () => viewModel.deleteBudget(budgets[i].budget.id),
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(height: 10),
-          ],
+          ),
 
         const SizedBox(height: 20),
 
-        // Recurring Bills & Scheduled Transactions Section
+        // Recurring Bills & Scheduled Transactions Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
             Text(
               'Recurring Bills & Income',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: colors.mutedText,
               ),
             ),
-            TextButton.icon(
-              onPressed: () => _showRecurringDialog(context),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Add Rule'),
+            MinimalPill(
+              label: '+ Add Rule',
+              onTap: () => _showRecurringDialog(context),
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
             ),
           ],
         ),
@@ -117,22 +113,32 @@ class BudgetsTab extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: Text(
                 'No recurring bills or scheduled entries yet. Add rent, subscriptions, or salary to auto-log locally on launch.',
-                style: theme.textTheme.bodyMedium?.copyWith(
+                style: theme.textTheme.bodySmall?.copyWith(
                   color: colors.mutedText,
                 ),
               ),
             ),
           )
         else
-          for (final rule in recurring) ...<Widget>[
-            _RecurringRuleCard(
-              rule: rule,
-              viewModel: viewModel,
-              symbol: symbol,
-              onEdit: () => _showRecurringDialog(context, existing: rule),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: <Widget>[
+                for (int i = 0; i < recurring.length; i++) ...<Widget>[
+                  if (i > 0) const Divider(height: 1),
+                  _RecurringRuleRow(
+                    rule: recurring[i],
+                    viewModel: viewModel,
+                    symbol: symbol,
+                    onEdit: () => _showRecurringDialog(
+                      context,
+                      existing: recurring[i],
+                    ),
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(height: 10),
-          ],
+          ),
       ],
     );
   }
@@ -164,8 +170,8 @@ class BudgetsTab extends StatelessWidget {
   }
 }
 
-class _BudgetCard extends StatelessWidget {
-  const _BudgetCard({
+class _BudgetRow extends StatelessWidget {
+  const _BudgetRow({
     required this.progress,
     required this.symbol,
     required this.onTap,
@@ -181,107 +187,76 @@ class _BudgetCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.moneyColors;
+    final barColor =
+        progress.isOverBudget ? colors.expense : theme.colorScheme.primary;
 
-    final Color barColor;
-    final String statusText;
-    if (progress.isOverBudget) {
-      barColor = colors.expense;
-      statusText =
-          'Over by ${AppFormatters.money(progress.spentAmount - progress.budget.limitAmount, symbol)}';
-    } else if (progress.isWarning) {
-      barColor = colors.warning;
-      statusText =
-          '${AppFormatters.money(progress.remainingAmount, symbol)} left';
-    } else {
-      barColor = colors.income;
-      statusText =
-          '${AppFormatters.money(progress.remainingAmount, symbol)} left';
-    }
-
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: progress.category.color.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      progress.category.icon,
-                      color: progress.category.color,
-                      size: 20,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    progress.category.name,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          progress.category.name,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          statusText,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: progress.isOverBudget
-                                ? colors.expense
-                                : colors.mutedText,
-                            fontWeight: progress.isOverBudget
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                          ),
-                        ),
-                      ],
+                ),
+                Text(
+                  '${AppFormatters.money(progress.spentAmount, symbol)} / ${AppFormatters.money(progress.budget.limitAmount, symbol)}',
+                  style: AppTheme.tabular(
+                    TextStyle(
+                      fontSize: 12,
+                      color: progress.isOverBudget
+                          ? colors.expense
+                          : colors.mutedText,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  Text(
-                    '${AppFormatters.money(progress.spentAmount, symbol)} / ${AppFormatters.money(progress.budget.limitAmount, symbol)}',
-                    style: AppTheme.tabular(
-                      theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                ),
+                const SizedBox(width: 6),
+                InkResponse(
+                  onTap: onDelete,
+                  radius: 14,
+                  child: Tooltip(
+                    message: 'Remove Budget',
+                    child: Padding(
+                      padding: const EdgeInsets.all(2),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: colors.mutedText,
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 18),
-                    tooltip: 'Remove Budget',
-                    onPressed: onDelete,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: progress.clampedRatio,
-                  minHeight: 6,
-                  backgroundColor: barColor.withValues(alpha: 0.14),
-                  valueColor: AlwaysStoppedAnimation<Color>(barColor),
                 ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: progress.clampedRatio,
+                minHeight: 6,
+                backgroundColor: colors.softTint,
+                valueColor: AlwaysStoppedAnimation<Color>(barColor),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _RecurringRuleCard extends StatelessWidget {
-  const _RecurringRuleCard({
+class _RecurringRuleRow extends StatelessWidget {
+  const _RecurringRuleRow({
     required this.rule,
     required this.viewModel,
     required this.symbol,
@@ -295,113 +270,85 @@ class _RecurringRuleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final colors = context.moneyColors;
-    final category = viewModel.categoryById(rule.categoryId);
     final account = viewModel.accountById(rule.accountId);
     final isIncome = rule.type == TransactionType.income;
     final amountColor = isIncome ? colors.income : colors.expense;
 
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onEdit,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
+    return InkWell(
+      onTap: onEdit,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: (category?.color ?? amountColor)
-                          .withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      category?.icon ?? Icons.repeat_rounded,
-                      color: category?.color ?? amountColor,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          rule.title,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          '${rule.frequency.label} • ${account?.name ?? 'Wallet'} • Next: ${AppFormatters.dateShort(rule.nextDueDate)}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.mutedText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                   Text(
-                    AppFormatters.money(
-                      rule.amount,
-                      symbol,
-                      showPlusSign: isIncome,
-                      showMinusSign: !isIncome,
+                    rule.title,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
                     ),
-                    style: AppTheme.tabular(
-                      theme.textTheme.titleMedium?.copyWith(
-                        color: amountColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${rule.frequency.label} · ${account?.name ?? 'Wallet'} · Next ${AppFormatters.dateShort(rule.nextDueDate)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: colors.mutedText),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Icon(
-                        rule.autoLog
-                            ? Icons.check_circle_outline_rounded
-                            : Icons.notifications_none_rounded,
-                        size: 16,
-                        color: colors.mutedText,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        rule.autoLog ? 'Auto-logs on due date' : 'Manual reminder',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: colors.mutedText,
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                Text(
+                  AppFormatters.money(
+                    rule.amount,
+                    symbol,
+                    showPlusSign: isIncome,
+                    showMinusSign: !isIncome,
+                  ),
+                  style: AppTheme.tabular(
+                    TextStyle(
+                      fontSize: 13.5,
+                      color: amountColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                GestureDetector(
+                  onTap: () async {
+                    await viewModel.logRecurringNow(rule);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Logged "${rule.title}" today.'),
                         ),
+                      );
+                    }
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text(
+                      'Log now',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: colors.mutedText,
+                        decoration: TextDecoration.underline,
                       ),
-                    ],
+                    ),
                   ),
-                  TextButton(
-                    onPressed: () async {
-                      await viewModel.logRecurringNow(rule);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Logged "${rule.title}" today.'),
-                          ),
-                        );
-                      }
-                    },
-                    child: const Text('Log Now'),
-                  ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

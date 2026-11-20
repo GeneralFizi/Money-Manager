@@ -171,13 +171,13 @@ class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: moneyColors.cardBorder, width: 1),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surfaceContainerLow,
+        fillColor: cardBg,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: moneyColors.cardBorder),
@@ -188,11 +188,11 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: scheme.primary, width: 1.6),
+          borderSide: BorderSide(color: scheme.primary, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
+          horizontal: 14,
+          vertical: 11,
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
@@ -269,6 +269,128 @@ class AppTheme {
 extension MoneyThemeContext on BuildContext {
   MoneyColors get moneyColors =>
       Theme.of(this).extension<MoneyColors>() ?? MoneyColors.light;
+}
+
+/// Reusable minimalist pill button shared across filters, headers, and forms.
+class MinimalPill extends StatelessWidget {
+  const MinimalPill({
+    super.key,
+    required this.label,
+    required this.onTap,
+    this.selected = false,
+    this.filledInk = false,
+    this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+  });
+
+  final String label;
+  final VoidCallback? onTap;
+  final bool selected;
+  final bool filledInk;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.moneyColors;
+    final bg = filledInk
+        ? theme.colorScheme.primary
+        : (selected
+            ? colors.softTint
+            : theme.colorScheme.surfaceContainerLowest);
+    final fg = filledInk
+        ? theme.colorScheme.onPrimary
+        : (selected ? theme.colorScheme.onSurface : colors.mutedText);
+    final borderColor =
+        (filledInk || selected) ? theme.colorScheme.primary : colors.cardBorder;
+
+    return Material(
+      color: bg,
+      shape: StadiumBorder(side: BorderSide(color: borderColor, width: 1)),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: padding,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight:
+                  (filledInk || selected) ? FontWeight.w600 : FontWeight.w500,
+              color: fg,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact inline month switcher matching the minimalist header style.
+class MinimalMonthSwitcher extends StatelessWidget {
+  const MinimalMonthSwitcher({
+    super.key,
+    required this.month,
+    required this.onChangeMonth,
+    this.textStyle,
+  });
+
+  final DateTime month;
+  final ValueChanged<int> onChangeMonth;
+  final TextStyle? textStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.moneyColors;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        _chevronButton(
+          icon: Icons.chevron_left_rounded,
+          tooltip: 'Previous Month',
+          color: colors.mutedText,
+          onTap: () => onChangeMonth(-1),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            AppFormatters.monthYear(month),
+            style: textStyle ??
+                theme.textTheme.bodySmall?.copyWith(
+                  color: colors.mutedText,
+                  fontWeight: FontWeight.w500,
+                ),
+          ),
+        ),
+        _chevronButton(
+          icon: Icons.chevron_right_rounded,
+          tooltip: 'Next Month',
+          color: colors.mutedText,
+          onTap: () => onChangeMonth(1),
+        ),
+      ],
+    );
+  }
+
+  Widget _chevronButton({
+    required IconData icon,
+    required String tooltip,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkResponse(
+      onTap: onTap,
+      radius: 16,
+      child: Tooltip(
+        message: tooltip,
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Icon(icon, size: 16, color: color),
+        ),
+      ),
+    );
+  }
 }
 
 /// Formatting helpers for clean currency and date rendering.
