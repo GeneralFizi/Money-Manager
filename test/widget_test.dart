@@ -55,9 +55,11 @@ void main() {
 
       await tester.tap(find.text('Reports'));
       await tester.pumpAndSettle();
+      expect(find.text('YTD Income'), findsOneWidget);
       expect(find.text('Spending by Category'), findsOneWidget);
-      await tester.drag(find.byType(ListView).last, const Offset(0, -300));
+      await tester.drag(find.byType(ListView).last, const Offset(0, -400));
       await tester.pumpAndSettle();
+      expect(find.text('YTD Cashflow'), findsOneWidget);
       expect(find.text('6-Month Cashflow'), findsOneWidget);
 
       await tester.tap(find.text('Backup'));

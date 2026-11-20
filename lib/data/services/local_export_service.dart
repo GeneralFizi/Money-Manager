@@ -95,6 +95,39 @@ class LocalExportService {
     return savedUri != null;
   }
 
+  /// Exports Year-to-Date monthly income, expense, and net totals to CSV.
+  Future<bool> saveYtdCashflowCsvToDevice({
+    required int year,
+    required String currencyCode,
+    required List<({String month, double income, double expense, double net})>
+        rows,
+  }) async {
+    double totalIncome = 0;
+    double totalExpense = 0;
+    final buffer = StringBuffer()..writeln('Month,Income,Expense,Net,Currency');
+    for (final row in rows) {
+      totalIncome += row.income;
+      totalExpense += row.expense;
+      buffer.writeln(
+        '${_escapeCsv(row.month)},${row.income.toStringAsFixed(2)},${row.expense.toStringAsFixed(2)},${row.net.toStringAsFixed(2)},$currencyCode',
+      );
+    }
+    final totalNet = totalIncome - totalExpense;
+    buffer.writeln(
+      'YTD Total,${totalIncome.toStringAsFixed(2)},${totalExpense.toStringAsFixed(2)},${totalNet.toStringAsFixed(2)},$currencyCode',
+    );
+
+    final bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
+    final stamp = _dateStamp(DateTime.now());
+    final savedUri = await FilePicker.saveFile(
+      dialogTitle: 'Export YTD Cashflow CSV',
+      fileName: 'money_manager_ytd_cashflow_${year}_$stamp.csv',
+      bytes: bytes,
+      mimeType: 'text/csv',
+    );
+    return savedUri != null;
+  }
+
   /// Lets the user select a local `.json` backup file and parses it safely.
   Future<BackupPayload?> pickJsonBackupFromDevice() async {
     final picked = await FilePicker.pickFile(

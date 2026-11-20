@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:uuid/uuid.dart';
 
@@ -25,7 +26,7 @@ class CategorySpendSlice {
   final double percentage;
 }
 
-/// Monthly Income vs. Expense totals for 6-month Cashflow Bar Chart.
+/// Monthly Income vs. Expense totals for Cashflow Bar Charts.
 class MonthlyCashflowPoint {
   const MonthlyCashflowPoint({
     required this.month,
@@ -36,6 +37,8 @@ class MonthlyCashflowPoint {
   final DateTime month;
   final double income;
   final double expense;
+
+  double get net => income - expense;
 }
 
 /// Primary MVVM ViewModel powering all local state and explicit on-demand sync actions.
@@ -270,22 +273,44 @@ class AppViewModel extends ChangeNotifier {
     return slices;
   }
 
-  List<MonthlyCashflowPoint> get sixMonthCashflow {
-    final points = <MonthlyCashflowPoint>[];
-    for (int i = 5; i >= 0; i--) {
-      final target = DateTime(_selectedMonth.year, _selectedMonth.month - i, 1);
-      double inc = 0;
-      double exp = 0;
-      for (final tx in _transactions) {
-        if (tx.date.year == target.year && tx.date.month == target.month) {
-          if (tx.type == TransactionType.income) inc += amountInBase(tx);
-          if (tx.type == TransactionType.expense) exp += amountInBase(tx);
-        }
+  MonthlyCashflowPoint _cashflowForMonth(DateTime target) {
+    double inc = 0;
+    double exp = 0;
+    for (final tx in _transactions) {
+      if (tx.date.year == target.year && tx.date.month == target.month) {
+        if (tx.type == TransactionType.income) inc += amountInBase(tx);
+        if (tx.type == TransactionType.expense) exp += amountInBase(tx);
       }
-      points.add(MonthlyCashflowPoint(month: target, income: inc, expense: exp));
     }
-    return points;
+    return MonthlyCashflowPoint(month: target, income: inc, expense: exp);
   }
+
+  List<MonthlyCashflowPoint> get sixMonthCashflow {
+    return List<MonthlyCashflowPoint>.generate(
+      6,
+      (index) => _cashflowForMonth(
+        DateTime(_selectedMonth.year, _selectedMonth.month - (5 - index), 1),
+      ),
+    );
+  }
+
+  /// Monthly cashflow totals from January of [_selectedMonth.year] through [_selectedMonth].
+  List<MonthlyCashflowPoint> get ytdCashflow {
+    return List<MonthlyCashflowPoint>.generate(
+      _selectedMonth.month,
+      (index) => _cashflowForMonth(
+        DateTime(_selectedMonth.year, index + 1, 1),
+      ),
+    );
+  }
+
+  double get ytdIncome =>
+      ytdCashflow.fold<double>(0.0, (sum, pt) => sum + pt.income);
+
+  double get ytdExpense =>
+      ytdCashflow.fold<double>(0.0, (sum, pt) => sum + pt.expense);
+
+  double get ytdNet => ytdIncome - ytdExpense;
 
   // --- Filter Controls ---
 
@@ -550,6 +575,25 @@ class AppViewModel extends ChangeNotifier {
       accounts: _accounts,
       categories: _categories,
       currencyCode: _settings.currencyCode,
+    );
+  }
+
+  Future<bool> exportYtdCashflowCsv() async {
+    final fmt = DateFormat('MMM yyyy');
+    final rows = ytdCashflow
+        .map(
+          (pt) => (
+            month: fmt.format(pt.month),
+            income: pt.income,
+            expense: pt.expense,
+            net: pt.net,
+          ),
+        )
+        .toList();
+    return _localExport.saveYtdCashflowCsvToDevice(
+      year: _selectedMonth.year,
+      currencyCode: _settings.currencyCode,
+      rows: rows,
     );
   }
 }
