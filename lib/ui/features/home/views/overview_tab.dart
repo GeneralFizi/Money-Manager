@@ -308,9 +308,13 @@ class _TransactionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.moneyColors;
+    final baseCode = viewModel.settings.currencyCode;
     final fromAccount = viewModel.accountById(tx.accountId);
     final toAccount = viewModel.accountById(tx.toAccountId);
     final category = viewModel.categoryById(tx.categoryId);
+    final nativeSymbol =
+        fromAccount?.effectiveCurrencySymbol(symbol) ?? symbol;
+    final isForeign = fromAccount?.isForeignCurrency(baseCode) ?? false;
 
     final Color accentColor;
     final IconData badgeIcon;
@@ -327,7 +331,8 @@ class _TransactionTile extends StatelessWidget {
           fromAccount?.name ?? 'Wallet',
           if (tx.note.isNotEmpty) tx.note,
         ].join(' • ');
-        amountText = AppFormatters.money(tx.amount, symbol, showPlusSign: true);
+        amountText =
+            AppFormatters.money(tx.amount, nativeSymbol, showPlusSign: true);
       case TransactionType.expense:
         accentColor = colors.expense;
         badgeIcon = category?.icon ?? Icons.arrow_upward_rounded;
@@ -337,7 +342,7 @@ class _TransactionTile extends StatelessWidget {
           if (tx.note.isNotEmpty) tx.note,
         ].join(' • ');
         amountText =
-            AppFormatters.money(tx.amount, symbol, showMinusSign: true);
+            AppFormatters.money(tx.amount, nativeSymbol, showMinusSign: true);
       case TransactionType.transfer:
         accentColor = colors.transfer;
         badgeIcon = Icons.swap_horiz_rounded;
@@ -345,7 +350,7 @@ class _TransactionTile extends StatelessWidget {
         final route =
             '${fromAccount?.name ?? 'Wallet'} → ${toAccount?.name ?? 'Wallet'}';
         subtitle = tx.note.isNotEmpty ? '$route • ${tx.note}' : route;
-        amountText = AppFormatters.money(tx.amount, symbol);
+        amountText = AppFormatters.money(tx.amount, nativeSymbol);
     }
 
     return Dismissible(
@@ -397,15 +402,39 @@ class _TransactionTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodySmall?.copyWith(color: colors.mutedText),
         ),
-        trailing: Text(
-          amountText,
-          style: AppTheme.tabular(
-            theme.textTheme.titleMedium?.copyWith(
-              color: accentColor,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
+        trailing: isForeign
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: <Widget>[
+                  Text(
+                    amountText,
+                    style: AppTheme.tabular(
+                      theme.textTheme.titleMedium?.copyWith(
+                        color: accentColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '≈ ${AppFormatters.money(viewModel.amountInBase(tx), symbol)}',
+                    style: AppTheme.tabular(
+                      theme.textTheme.labelSmall?.copyWith(
+                        color: colors.mutedText,
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : Text(
+                amountText,
+                style: AppTheme.tabular(
+                  theme.textTheme.titleMedium?.copyWith(
+                    color: accentColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
         onTap: () => showModalBottomSheet<void>(
           context: context,
           isScrollControlled: true,

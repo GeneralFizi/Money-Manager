@@ -25,6 +25,43 @@ class CurrencyOption {
     CurrencyOption(code: 'IDR', symbol: 'Rp', label: 'Indonesian Rupiah'),
     CurrencyOption(code: 'MYR', symbol: 'RM', label: 'Malaysian Ringgit'),
   ];
+
+  static CurrencyOption? findByCode(String code) {
+    for (final opt in presets) {
+      if (opt.code == code) return opt;
+    }
+    return null;
+  }
+
+  /// Approximate offline reference value in USD for 1 unit of [code].
+  static double _usdPerUnit(String code) {
+    return switch (code) {
+      'USD' => 1.0,
+      'EUR' => 1.08,
+      'GBP' => 1.27,
+      'INR' => 0.012,
+      'JPY' => 0.0066,
+      'CAD' => 0.73,
+      'AUD' => 0.66,
+      'SGD' => 0.74,
+      'IDR' => 0.000063,
+      'MYR' => 0.22,
+      _ => 1.0,
+    };
+  }
+
+  /// Computes default offline rate: `1 [walletCode] = X [baseCode]`.
+  static double defaultRateToBase({
+    required String walletCode,
+    required String baseCode,
+  }) {
+    if (walletCode == baseCode) return 1.0;
+    final walletInUsd = _usdPerUnit(walletCode);
+    final baseInUsd = _usdPerUnit(baseCode);
+    if (baseInUsd <= 0) return 1.0;
+    final rate = walletInUsd / baseInUsd;
+    return double.parse(rate.toStringAsPrecision(4));
+  }
 }
 
 /// Snapshot of locally stored app preferences.

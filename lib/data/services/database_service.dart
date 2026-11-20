@@ -27,7 +27,7 @@ class DatabaseService {
     bool? forceKeyValueStore,
   }) : _forceKeyValueStore = forceKeyValueStore ?? kIsWeb;
 
-  static const int _dbVersion = 1;
+  static const int _dbVersion = 2;
   static const String _dbFileName = 'money_manager.db';
 
   // Web / key-value fallback keys
@@ -69,6 +69,15 @@ class DatabaseService {
           await _createTables(db);
           await _seedDefaultsInDb(db);
         },
+        onUpgrade: (db, oldVersion, newVersion) async {
+          if (oldVersion < 2) {
+            await db.execute('ALTER TABLE accounts ADD COLUMN currency_code TEXT');
+            await db.execute('ALTER TABLE accounts ADD COLUMN currency_symbol TEXT');
+            await db.execute(
+              'ALTER TABLE accounts ADD COLUMN exchange_rate REAL NOT NULL DEFAULT 1.0',
+            );
+          }
+        },
       ),
     );
     _initialized = true;
@@ -89,7 +98,10 @@ class DatabaseService {
         initial_balance REAL NOT NULL,
         color_value INTEGER NOT NULL,
         icon_code_point INTEGER NOT NULL,
-        created_at TEXT NOT NULL
+        created_at TEXT NOT NULL,
+        currency_code TEXT,
+        currency_symbol TEXT,
+        exchange_rate REAL NOT NULL DEFAULT 1.0
       )
     ''');
 

@@ -146,7 +146,16 @@ class _TransactionFormSheetState extends State<TransactionFormSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.moneyColors;
-    final symbol = widget.viewModel.settings.currencySymbol;
+    final baseSymbol = widget.viewModel.settings.currencySymbol;
+    final baseCode = widget.viewModel.settings.currencyCode;
+    final selectedAccount = widget.viewModel.accountById(_accountId);
+    final walletSymbol =
+        selectedAccount?.effectiveCurrencySymbol(baseSymbol) ?? baseSymbol;
+    final isForeign = selectedAccount?.isForeignCurrency(baseCode) ?? false;
+    final enteredAmount = double.tryParse(_amountController.text.trim()) ?? 0.0;
+    final convertedBase = selectedAccount != null
+        ? selectedAccount.toBaseAmount(enteredAmount, baseCode)
+        : enteredAmount;
     final accounts = widget.viewModel.accounts;
     final categories = _type == TransactionType.income
         ? widget.viewModel.incomeCategories
@@ -211,6 +220,7 @@ class _TransactionFormSheetState extends State<TransactionFormSheet> {
             TextField(
               controller: _amountController,
               autofocus: widget.existing == null,
+              onChanged: (_) => setState(() {}),
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: <TextInputFormatter>[
@@ -223,10 +233,21 @@ class _TransactionFormSheetState extends State<TransactionFormSheet> {
               ),
               decoration: InputDecoration(
                 labelText: 'Amount',
-                prefixText: '$symbol ',
+                prefixText: '$walletSymbol ',
                 hintText: '0.00',
               ),
             ),
+            if (isForeign && selectedAccount != null) ...<Widget>[
+              const SizedBox(height: 6),
+              Text(
+                '≈ ${AppFormatters.money(convertedBase, baseSymbol)} ($baseCode at 1 ${selectedAccount.currencyCode} = ${selectedAccount.exchangeRateToBase} $baseCode)',
+                style: AppTheme.tabular(
+                  theme.textTheme.bodySmall?.copyWith(
+                    color: colors.mutedText,
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             Text(
               _type == TransactionType.transfer ? 'From Wallet' : 'Wallet',

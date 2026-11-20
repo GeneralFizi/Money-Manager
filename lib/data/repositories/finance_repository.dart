@@ -65,11 +65,16 @@ class FinanceRepository {
   Future<void> restoreBackup(BackupPayload payload) =>
       _db.restoreAllData(payload);
 
-  /// Computes current balance and totals for each account locally.
+  /// Computes current balance and totals for each account locally, converting cross-currency transfers and base-currency totals.
   List<AccountSummary> computeAccountSummaries({
     required List<Account> accounts,
     required List<TransactionItem> transactions,
+    String baseCurrencyCode = 'USD',
   }) {
+    final accountMap = <String, Account>{
+      for (final a in accounts) a.id: a,
+    };
+
     return accounts.map((account) {
       double balance = account.initialBalance;
       double totalIncome = 0;
@@ -92,7 +97,18 @@ class FinanceRepository {
               balance -= tx.amount;
             }
             if (tx.toAccountId == account.id) {
-              balance += tx.amount;
+              final fromAccount = accountMap[tx.accountId];
+              if (fromAccount == null ||
+                  fromAccount.effectiveCurrencyCode(baseCurrencyCode) ==
+                      account.effectiveCurrencyCode(baseCurrencyCode)) {
+                balance += tx.amount;
+              } else {
+                final fromRate = fromAccount.toBaseAmount(1.0, baseCurrencyCode);
+                final toRate = account.toBaseAmount(1.0, baseCurrencyCode);
+                final converted =
+                    toRate > 0 ? tx.amount * (fromRate / toRate) : tx.amount;
+                balance += converted;
+              }
             }
         }
       }
@@ -102,6 +118,9 @@ class FinanceRepository {
         currentBalance: balance,
         totalIncome: totalIncome,
         totalExpense: totalExpense,
+        currentBalanceInBase: account.toBaseAmount(balance, baseCurrencyCode),
+        totalIncomeInBase: account.toBaseAmount(totalIncome, baseCurrencyCode),
+        totalExpenseInBase: account.toBaseAmount(totalExpense, baseCurrencyCode),
       );
     }).toList();
   }
@@ -112,9 +131,14 @@ class FinanceRepository {
     required List<Budget> budgets,
     required List<CategoryItem> categories,
     required List<TransactionItem> transactions,
+    List<Account> accounts = const <Account>[],
+    String baseCurrencyCode = 'USD',
   }) {
     final categoryMap = <String, CategoryItem>{
       for (final c in categories) c.id: c,
+    };
+    final accountMap = <String, Account>{
+      for (final a in accounts) a.id: a,
     };
 
     final spentByCategory = <String, double>{};
@@ -123,7 +147,10 @@ class FinanceRepository {
       if (Budget.formatYearMonth(tx.date) != yearMonth) continue;
       final catId = tx.categoryId;
       if (catId == null) continue;
-      spentByCategory[catId] = (spentByCategory[catId] ?? 0) + tx.amount;
+      final acc = accountMap[tx.accountId];
+      final amountInBase =
+          acc != null ? acc.toBaseAmount(tx.amount, baseCurrencyCode) : tx.amount;
+      spentByCategory[catId] = (spentByCategory[catId] ?? 0) + amountInBase;
     }
 
     final items = <BudgetProgress>[];

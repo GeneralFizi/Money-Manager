@@ -144,14 +144,21 @@ class AppViewModel extends ChangeNotifier {
 
   // --- Derived Read Models ---
 
+  double amountInBase(TransactionItem tx) {
+    final acc = accountById(tx.accountId);
+    if (acc == null) return tx.amount;
+    return acc.toBaseAmount(tx.amount, _settings.currencyCode);
+  }
+
   List<AccountSummary> get accountSummaries => _repo.computeAccountSummaries(
         accounts: _accounts,
         transactions: _transactions,
+        baseCurrencyCode: _settings.currencyCode,
       );
 
   double get totalNetBalance => accountSummaries.fold<double>(
         0.0,
-        (sum, summary) => sum + summary.currentBalance,
+        (sum, summary) => sum + summary.currentBalanceInBase,
       );
 
   List<TransactionItem> get monthlyTransactions {
@@ -196,11 +203,11 @@ class AppViewModel extends ChangeNotifier {
 
   double get monthlyIncome => monthlyTransactions
       .where((tx) => tx.type == TransactionType.income)
-      .fold<double>(0.0, (sum, tx) => sum + tx.amount);
+      .fold<double>(0.0, (sum, tx) => sum + amountInBase(tx));
 
   double get monthlyExpense => monthlyTransactions
       .where((tx) => tx.type == TransactionType.expense)
-      .fold<double>(0.0, (sum, tx) => sum + tx.amount);
+      .fold<double>(0.0, (sum, tx) => sum + amountInBase(tx));
 
   double get monthlyNet => monthlyIncome - monthlyExpense;
 
@@ -209,6 +216,8 @@ class AppViewModel extends ChangeNotifier {
         budgets: _budgets,
         categories: _categories,
         transactions: _transactions,
+        accounts: _accounts,
+        baseCurrencyCode: _settings.currencyCode,
       );
 
   List<CategoryItem> get incomeCategories => _categories
@@ -242,7 +251,7 @@ class AppViewModel extends ChangeNotifier {
     final sums = <String, double>{};
     for (final tx in monthlyTransactions) {
       if (tx.type != TransactionType.expense || tx.categoryId == null) continue;
-      sums[tx.categoryId!] = (sums[tx.categoryId!] ?? 0) + tx.amount;
+      sums[tx.categoryId!] = (sums[tx.categoryId!] ?? 0) + amountInBase(tx);
     }
 
     final slices = <CategorySpendSlice>[];
@@ -269,8 +278,8 @@ class AppViewModel extends ChangeNotifier {
       double exp = 0;
       for (final tx in _transactions) {
         if (tx.date.year == target.year && tx.date.month == target.month) {
-          if (tx.type == TransactionType.income) inc += tx.amount;
-          if (tx.type == TransactionType.expense) exp += tx.amount;
+          if (tx.type == TransactionType.income) inc += amountInBase(tx);
+          if (tx.type == TransactionType.expense) exp += amountInBase(tx);
         }
       }
       points.add(MonthlyCashflowPoint(month: target, income: inc, expense: exp));

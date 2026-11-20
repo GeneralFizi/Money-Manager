@@ -67,6 +67,9 @@ class Account {
     required this.colorValue,
     required this.iconCodePoint,
     required this.createdAt,
+    this.currencyCode,
+    this.currencySymbol,
+    this.exchangeRateToBase = 1.0,
   });
 
   final String id;
@@ -76,9 +79,31 @@ class Account {
   final int colorValue;
   final int iconCodePoint;
   final DateTime createdAt;
+  final String? currencyCode;
+  final String? currencySymbol;
+  /// Rate to convert 1 unit of this wallet's currency into the app's base currency.
+  final double exchangeRateToBase;
 
   Color get color => Color(colorValue);
   IconData get icon => AccountIcons.resolve(iconCodePoint, type);
+
+  String effectiveCurrencyCode(String baseCode) =>
+      (currencyCode != null && currencyCode!.isNotEmpty)
+          ? currencyCode!
+          : baseCode;
+
+  String effectiveCurrencySymbol(String baseSymbol) =>
+      (currencySymbol != null && currencySymbol!.isNotEmpty)
+          ? currencySymbol!
+          : baseSymbol;
+
+  bool isForeignCurrency(String baseCode) =>
+      currencyCode != null &&
+      currencyCode!.isNotEmpty &&
+      currencyCode != baseCode;
+
+  double toBaseAmount(double nativeAmount, String baseCode) =>
+      isForeignCurrency(baseCode) ? nativeAmount * exchangeRateToBase : nativeAmount;
 
   Account copyWith({
     String? id,
@@ -88,6 +113,11 @@ class Account {
     int? colorValue,
     int? iconCodePoint,
     DateTime? createdAt,
+    String? currencyCode,
+    bool clearCurrencyCode = false,
+    String? currencySymbol,
+    bool clearCurrencySymbol = false,
+    double? exchangeRateToBase,
   }) {
     return Account(
       id: id ?? this.id,
@@ -97,6 +127,11 @@ class Account {
       colorValue: colorValue ?? this.colorValue,
       iconCodePoint: iconCodePoint ?? this.iconCodePoint,
       createdAt: createdAt ?? this.createdAt,
+      currencyCode:
+          clearCurrencyCode ? null : (currencyCode ?? this.currencyCode),
+      currencySymbol:
+          clearCurrencySymbol ? null : (currencySymbol ?? this.currencySymbol),
+      exchangeRateToBase: exchangeRateToBase ?? this.exchangeRateToBase,
     );
   }
 
@@ -109,11 +144,16 @@ class Account {
       'color_value': colorValue,
       'icon_code_point': iconCodePoint,
       'created_at': createdAt.toIso8601String(),
+      'currency_code': currencyCode,
+      'currency_symbol': currencySymbol,
+      'exchange_rate': exchangeRateToBase,
     };
   }
 
   factory Account.fromMap(Map<String, dynamic> map) {
     final parsedType = AccountType.fromName(map['type'] as String?);
+    final rawRate =
+        (map['exchange_rate'] ?? map['exchangeRateToBase'] ?? 1.0) as num?;
     return Account(
       id: map['id'] as String,
       name: map['name'] as String,
@@ -126,6 +166,10 @@ class Account {
             (map['created_at'] ?? map['createdAt']) as String? ?? '',
           ) ??
           DateTime.now(),
+      currencyCode: (map['currency_code'] ?? map['currencyCode']) as String?,
+      currencySymbol:
+          (map['currency_symbol'] ?? map['currencySymbol']) as String?,
+      exchangeRateToBase: rawRate != null && rawRate > 0 ? rawRate.toDouble() : 1.0,
     );
   }
 
@@ -138,6 +182,9 @@ class Account {
       'colorValue': colorValue,
       'iconCodePoint': iconCodePoint,
       'createdAt': createdAt.toIso8601String(),
+      'currencyCode': currencyCode,
+      'currencySymbol': currencySymbol,
+      'exchangeRateToBase': exchangeRateToBase,
     };
   }
 
@@ -151,10 +198,16 @@ class AccountSummary {
     required this.currentBalance,
     required this.totalIncome,
     required this.totalExpense,
+    required this.currentBalanceInBase,
+    required this.totalIncomeInBase,
+    required this.totalExpenseInBase,
   });
 
   final Account account;
   final double currentBalance;
   final double totalIncome;
   final double totalExpense;
+  final double currentBalanceInBase;
+  final double totalIncomeInBase;
+  final double totalExpenseInBase;
 }

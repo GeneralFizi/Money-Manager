@@ -237,4 +237,85 @@ void main() {
     expect(restoredTxs.single.note, 'Design sprint');
     expect(restoredTxs.single.amount, 750.0);
   });
+
+  test('converts foreign currency wallets, cross-currency transfers, and budgets into base currency offline',
+      () async {
+    final env = await createTestRepo();
+    addTearDown(env.db.close);
+
+    final eurAccount = Account(
+      id: 'acc_eur',
+      name: 'Euro Travel',
+      type: AccountType.savings,
+      initialBalance: 500.0,
+      colorValue: 0xFF3A6B9C,
+      iconCodePoint: AccountIcons.savings.codePoint,
+      createdAt: DateTime(2026, 11, 1),
+      currencyCode: 'EUR',
+      currencySymbol: '€',
+      exchangeRateToBase: 1.08,
+    );
+    await env.repo.saveAccount(eurAccount);
+
+    await env.repo.saveBudget(
+      const Budget(
+        id: 'bud_eur_food',
+        categoryId: 'cat_food',
+        yearMonth: '2026-11',
+        limitAmount: 200.0,
+      ),
+    );
+
+    final now = DateTime(2026, 11, 20);
+    // Spend €100 from EUR wallet (= $108 USD)
+    await env.repo.saveTransaction(
+      TransactionItem(
+        id: 'tx_eur_exp',
+        type: TransactionType.expense,
+        amount: 100.0,
+        accountId: 'acc_eur',
+        categoryId: 'cat_food',
+        date: now,
+      ),
+    );
+    // Transfer $108 from USD Main Bank -> EUR wallet (= +€100)
+    await env.repo.saveTransaction(
+      TransactionItem(
+        id: 'tx_fx_xfer',
+        type: TransactionType.transfer,
+        amount: 108.0,
+        accountId: 'acc_bank',
+        toAccountId: 'acc_eur',
+        date: now,
+      ),
+    );
+
+    final accounts = await env.repo.getAccounts();
+    final txs = await env.repo.getTransactions();
+    final categories = await env.repo.getCategories();
+    final budgets = await env.repo.getBudgets();
+
+    final summaries = env.repo.computeAccountSummaries(
+      accounts: accounts,
+      transactions: txs,
+      baseCurrencyCode: 'USD',
+    );
+    final eurSummary = summaries.firstWhere((s) => s.account.id == 'acc_eur');
+    final bankSummary = summaries.firstWhere((s) => s.account.id == 'acc_bank');
+
+    // €500 - €100 + €100 = €500 native, ≈ $540 USD
+    expect(eurSummary.currentBalance, closeTo(500.0, 0.001));
+    expect(eurSummary.currentBalanceInBase, closeTo(540.0, 0.001));
+    expect(bankSummary.currentBalance, closeTo(-108.0, 0.001));
+
+    final budgetProgress = env.repo.computeMonthlyBudgets(
+      yearMonth: '2026-11',
+      budgets: budgets,
+      categories: categories,
+      transactions: txs,
+      accounts: accounts,
+      baseCurrencyCode: 'USD',
+    );
+    expect(budgetProgress.single.spentAmount, closeTo(108.0, 0.001));
+  });
 }
