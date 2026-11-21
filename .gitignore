@@ -47,5 +47,6 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 
-# Release APK artifacts copied to workspace root
+# Release APK and packaged export artifacts
 *.apk
+/exports/
